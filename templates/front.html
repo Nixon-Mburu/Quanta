@@ -33,26 +33,23 @@
             max-width: 1200px;
             margin: 20px auto;
             display: flex;
-            align-items: center;
-            flex-wrap: wrap;
             justify-content: center;
         }
 
         .input-wrapper {
-            flex-grow: 1;
             position: relative;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             width: 100%;
             max-width: 700px;
         }
 
         textarea {
             flex-grow: 1;
-            height: 60px;
-            padding: 15px 20px;
-            font-size: 1rem;
+            height: 50px;
+            padding: 10px 15px;
+            font-size: 0.9rem;
             border-radius: 25px;
             border: 2px solid #ccc;
             resize: none;
@@ -70,6 +67,7 @@
         .button-group {
             display: flex;
             gap: 10px;
+            justify-content: center;
         }
 
         .vn-button {
@@ -89,15 +87,6 @@
 
         .vn-button:hover img {
             transform: scale(1.1);
-        }
-
-        .button-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
         }
 
         button {
@@ -145,7 +134,7 @@
             }
 
             textarea {
-                width: 100%;
+                width: 90%;
                 margin-bottom: 10px;
             }
 
@@ -179,6 +168,12 @@
             .input-wrapper {
                 width: 100%;
                 margin-top: 10px;
+            }
+
+            textarea {
+                font-size: 0.8rem;
+                height: 40px;
+                margin-bottom: 15px;
             }
 
             .vn-button img {
@@ -326,9 +321,9 @@
                 askQuestion();
             };
 
-            recognition.onerror = function() {
-                document.querySelector('.vn-button').style.backgroundColor = 'transparent';
-                alert("Speech recognition error. Please try again or type your question.");
+            recognition.onerror =             recognition.onerror = function(event) {
+                console.error("Speech recognition error:", event.error);
+                appendAnswer("Sorry, I couldn't hear that properly. Please try again.");
             };
 
             recognition.start();
@@ -337,10 +332,10 @@
         function checkEnter(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                isVoiceInput = false;
                 askQuestion();
             }
         }
     </script>
 </body>
 </html>
+
