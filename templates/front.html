@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics Tutor</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: beige;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .quote {
+            font-family: 'Cambria', serif;
+            font-weight: bold;
+            font-size: 66px;
+            margin: 20px 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        .input-container {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        textarea {
+            flex-grow: 1;
+            height: 60px;
+            padding: 15px 20px;
+            font-size: 20px;
+            border-radius: 25px;
+            border: 2px solid #ccc;
+            resize: none;
+            transition: border-color 0.3s;
+            font-family: inherit;
+            margin-right: 10px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .vn-button {
+            background-color: transparent;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .vn-button img {
+            width: 34px;
+            height: 34px;
+            transition: transform 0.2s;
+        }
+
+        .vn-button:hover img {
+            transform: scale(1.1);
+        }
+
+        .button-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            background-color: #333;
+        }
+
+        .answer-text {
+            font-family: 'Cambria', serif;
+            font-size: 18px;
+            color: black;
+            line-height: 1.6;
+            max-width: 80%;
+            margin: 20px auto;
+            text-align: justify;
+        }
+
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 40px;
+            height: 90px;
+        }
+    </style>
+</head>
+<body>
+   
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
+
+    <div class="quote">
+        "The knowledge of all things <br>
+        is possible..."
+    </div>
+
+    <div class="input-container">
+        <div class="input-wrapper">
+            <textarea id="question" placeholder="Type your question here..." rows="3" onkeydown="checkEnter(event)"></textarea>
+            <div class="button-group">
+                <!-- Mic Button -->
+                <div class="vn-button mic-button" onclick="startVoiceInput()" title="Ask question with voice">
+                    <img src="{{ url_for('static', filename='mic.png') }}" alt="Mic Icon">
+                </div>
+                <!-- Send Button -->
+                <div class="vn-button send-button" onclick="askQuestion()" title="Send Question">
+                    <img src="{{ url_for('static', filename='send.png') }}" alt="Send Icon">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="answer-container">
+        <!-- The answer will appear here -->
+    </div>
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        let chatHistory = [];
+        let isVoiceInput = false;
+        let selectedVoice = null;
+        let speaking = false;
+
+        // Initialize voice when page loads
+        window.speechSynthesis.onvoiceschanged = function() {
+            const voices = window.speechSynthesis.getVoices();
+            selectedVoice = voices.find(voice => voice.lang.includes('en') && voice.name.toLowerCase().includes('female')) || voices[0];
+        };
+
+        function appendAnswer(content, isQuestion = false) {
+            const answerContainer = document.createElement('div');
+            answerContainer.classList.add('answer-text');
+            answerContainer.textContent = isQuestion ? `Q: ${content}` : `A: ${content}`;
+            const containerDiv = document.getElementById('answer-container');
+            containerDiv.appendChild(answerContainer);
+
+            if (!isQuestion && isVoiceInput) {
+                speakAnswer(content);
+            }
+        }
+
+        function speakAnswer(text) {
+            if (speaking) window.speechSynthesis.cancel();
+
+            const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+            let currentIndex = 0;
+
+            function speakNextSentence() {
+                if (currentIndex < sentences.length) {
+                    speaking = true;
+                    const utterance = new SpeechSynthesisUtterance(sentences[currentIndex]);
+                    utterance.voice = selectedVoice;
+                    utterance.rate = 1.0;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+
+                    utterance.onend = function() {
+                        currentIndex++;
+                        speakNextSentence();
+                    };
+
+                    utterance.onerror = function() {
+                        currentIndex++;
+                        speakNextSentence();
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    speaking = false;
+                }
+            }
+
+            speakNextSentence();
+        }
+
+        function askQuestion() {
+            const question = document.getElementById('question').value.trim();
+            if (!question) return;
+
+            appendAnswer(question, true);
+
+            fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question })
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendAnswer(data.answer);
+                chatHistory.push(
+                    { role: 'user', content: question },
+                    { role: 'bot', content: data.answer }
+                );
+                document.getElementById('question').value = '';
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                appendAnswer("Sorry, there was an error processing your request. Please try again.");
+            });
+        }
+
+        function startVoiceInput() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'en-US';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                document.querySelector('.vn-button').style.backgroundColor = '#d1f5d3';
+            };
+
+            recognition.onend = function() {
+                document.querySelector('.vn-button').style.backgroundColor = 'transparent';
+            };
+
+            recognition.onresult = function(event) {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('question').value = transcript;
+                isVoiceInput = true;
+                askQuestion();
+            };
+
+            recognition.onerror = function() {
+                document.querySelector('.vn-button').style.backgroundColor = 'transparent';
+                alert("Speech recognition error. Please try again or type your question.");
+            };
+
+            recognition.start();
+        }
+
+        function saveChat() {
+            const chatText = chatHistory.map(msg => 
+                `${msg.role === 'user' ? 'Q: ' : 'A: '}${msg.content}`
+            ).join('\n\n');
+
+            const doc = new docx.Document({
+                sections: [{
+                    properties: {},
+                    children: [
+                        new docx.Paragraph({
+                            children: chatText.split('\n').map(text => new docx.TextRun(text))
+                        })
+                    ]
+                }]
+            });
+
+            docx.Packer.toBlob(doc).then(blob => {
+                saveAs(blob, 'chat.docx');
+            });
+        }
+
+        function checkEnter(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                isVoiceInput = false;
+                askQuestion();
+            }
+        }
+    </script>
+</body>
+</html>
