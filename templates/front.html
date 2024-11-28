@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Physics Tutor</title>
     <style>
+        /* Global Styles */
         body {
             font-family: 'Arial', sans-serif;
             background-color: beige;
@@ -20,7 +21,7 @@
         .quote {
             font-family: 'Cambria', serif;
             font-weight: bold;
-            font-size: 66px;
+            font-size: 2.5rem;
             margin: 20px 0;
             padding: 20px;
             color: #333;
@@ -33,6 +34,8 @@
             margin: 20px auto;
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .input-wrapper {
@@ -41,19 +44,22 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            width: 100%;
+            max-width: 700px;
         }
 
         textarea {
             flex-grow: 1;
             height: 60px;
             padding: 15px 20px;
-            font-size: 20px;
+            font-size: 1rem;
             border-radius: 25px;
             border: 2px solid #ccc;
             resize: none;
             transition: border-color 0.3s;
             font-family: inherit;
             margin-right: 10px;
+            width: 100%;
         }
 
         textarea:focus {
@@ -112,7 +118,7 @@
 
         .answer-text {
             font-family: 'Cambria', serif;
-            font-size: 18px;
+            font-size: 1.1rem;
             color: black;
             line-height: 1.6;
             max-width: 80%;
@@ -124,28 +130,86 @@
             position: absolute;
             top: 20px;
             left: 40px;
-            height: 90px;
+            height: 70px;
+        }
+
+        /* Responsive Styling for smaller screens */
+        @media (max-width: 768px) {
+            .quote {
+                font-size: 1.8rem;
+            }
+
+            .input-wrapper {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            textarea {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .vn-button img {
+                width: 30px;
+                height: 30px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 20px;
+            }
+
+            .answer-text {
+                font-size: 1rem;
+                max-width: 90%;
+            }
+
+            .logo {
+                top: 10px;
+                left: 10px;
+                height: 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .quote {
+                font-size: 1.6rem;
+            }
+
+            .input-wrapper {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .vn-button img {
+                width: 28px;
+                height: 28px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 8px 15px;
+            }
+
+            .answer-text {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
 <body>
-   
     <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo" class="logo">
-
     <div class="quote">
-        "The knowledge of all things <br>
-        is possible..."
+        "The knowledge of all things <br> is possible..."
     </div>
 
     <div class="input-container">
         <div class="input-wrapper">
             <textarea id="question" placeholder="Type your question here..." rows="3" onkeydown="checkEnter(event)"></textarea>
             <div class="button-group">
-                <!-- Mic Button -->
                 <div class="vn-button mic-button" onclick="startVoiceInput()" title="Ask question with voice">
                     <img src="{{ url_for('static', filename='mic.png') }}" alt="Mic Icon">
                 </div>
-                <!-- Send Button -->
                 <div class="vn-button send-button" onclick="askQuestion()" title="Send Question">
                     <img src="{{ url_for('static', filename='send.png') }}" alt="Send Icon">
                 </div>
@@ -153,11 +217,8 @@
         </div>
     </div>
 
-    <div id="answer-container">
-        <!-- The answer will appear here -->
-    </div>
+    <div id="answer-container"></div>
 
-  
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -167,7 +228,6 @@
         let selectedVoice = null;
         let speaking = false;
 
-        // Initialize voice when page loads
         window.speechSynthesis.onvoiceschanged = function() {
             const voices = window.speechSynthesis.getVoices();
             selectedVoice = voices.find(voice => voice.lang.includes('en') && voice.name.toLowerCase().includes('female')) || voices[0];
@@ -272,27 +332,6 @@
             };
 
             recognition.start();
-        }
-
-        function saveChat() {
-            const chatText = chatHistory.map(msg => 
-                `${msg.role === 'user' ? 'Q: ' : 'A: '}${msg.content}`
-            ).join('\n\n');
-
-            const doc = new docx.Document({
-                sections: [{
-                    properties: {},
-                    children: [
-                        new docx.Paragraph({
-                            children: chatText.split('\n').map(text => new docx.TextRun(text))
-                        })
-                    ]
-                }]
-            });
-
-            docx.Packer.toBlob(doc).then(blob => {
-                saveAs(blob, 'chat.docx');
-            });
         }
 
         function checkEnter(event) {
